@@ -135,12 +135,6 @@ A aplicação foi configurada para tentativa de deploy no Vercel.
     (Insira sua chave quando solicitado e aplique ao ambiente de Produção).
 6.  Faça o deploy para produção: `vercel --prod`.
 
-### ⚠️ Problema Conhecido no Deploy do Vercel:
-
-* **Falha na Inicialização do Modelo de IA:** Atualmente, ao ser implantada no Vercel, a aplicação está apresentando um erro que impede a correta inicialização do modelo Gemini. O atributo `app.state.modelo_gemini` não é definido durante o evento de startup, resultando em um erro 500 quando o endpoint `/processar_email` é acessado.
-* **Funcionamento Local:** A aplicação funciona conforme o esperado em ambiente de desenvolvimento local.
-* A causa provável está relacionada à execução do evento de startup do FastAPI ou à inicialização/download de dependências (NLTK, modelo Gemini) no ambiente serverless específico do Vercel.
-
 ## 📖 Como Usar
 
 1.  Com o backend rodando (localmente ou no Vercel, caso o problema de startup seja resolvido), abra o `index.html` no navegador.
@@ -150,7 +144,3 @@ A aplicação foi configurada para tentativa de deploy no Vercel.
 3.  **Análise:** Clique no botão "Analisar Email".
 4.  **Resultados:** A classificação ("Produtivo" ou "Improdutivo") e uma sugestão de resposta serão exibidas abaixo do formulário.
 5.  **Erros:** Mensagens de erro aparecerão caso ocorra algum problema durante o processamento.
-
-## 👤 Autor
-
-[Seu Nome/Apelido Aqui] - Projeto para o Desafio AutoU.
