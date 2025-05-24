@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisador de Produtividade de Emails</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    </head>
+<body class="bg-gradient-to-br from-slate-900 to-slate-700 text-gray-200 font-sans min-h-screen flex flex-col
+            items-center justify-center p-4 selection:bg-blue-500 selection:text-white">
+
+    <div class="container mx-auto max-w-3xl w-full bg-slate-800 p-6 sm:p-8 rounded-xl shadow-2xl">
+        <header class="mb-8 text-center">
+             <h1 class="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400
+             via-sky-400 to-cyan-400">Analisador de E-mails com IA</h1>
+            <p class="text-slate-400 mt-2">Classifique a produtividade do email e obtenha sugestão de resposta.</p>
+        </header>
+
+        <form id="formularioEmail" class="space-y-6">
+            <div>
+                <label for="campoTextoEmail" class="block text-sm font-medium text-slate-300 mb-1">Insira o email:</label>
+                <textarea id="campoTextoEmail" name="textoEmail" rows="10" class="mt-1 block w-full px-3 py-2 bg-slate-700
+                border border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500
+                focus:border-blue-500 sm:text-sm placeholder-slate-500" placeholder="Insira o corpo do email..."></textarea>
+            </div>
+
+            <div class="relative flex items-center">
+                <div class="flex-grow border-t border-slate-600"></div>
+                <span class="flex-shrink mx-4 text-slate-500 text-sm">OU</span>
+                <div class="flex-grow border-t border-slate-600"></div>
+            </div>
+
+            <div class="flex flex-col items-center space-y-2">
+                <span class="block text-sm font-medium text-slate-300">Selecione o arquivo (.txt ou .pdf):</span>
+                <div class="flex items-center space-x-3 mt-1">
+                    <input type="file" id="inputArquivoEmail" name="arquivoEmail" accept=".txt,.pdf" class="hidden">
+
+                    <button type="button" id="botaoArquivoCustomizado" class="py-2 px-4 rounded-lg border-0 text-sm
+                    font-semibold bg-blue-500 text-white hover:bg-blue-600 focus:outline-none focus:ring-2
+                    focus:ring-blue-400 focus:ring-opacity-75 transition-colors duration-150">
+                        Selecione o arquivo
+                    </button>
+
+                    <span id="nomeArquivoExibido" class="text-sm text-slate-400">Nenhum arquivo selecionado</span>
+                </div>
+            </div>
+
+            <button type="submit" id="botaoAnalisarEmail" class="w-full flex items-center justify-center py-3 px-4
+                border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600
+                hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800
+                focus:ring-blue-500 transition-colors duration-150 disabled:opacity-50">
+                <div id="spinnerCarregando" class="hidden animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-2"></div>
+                Analisar Email
+            </button>
+        </form>
+
+        <div id="secaoResultados" class="mt-10 hidden">
+            <h2 class="text-2xl font-semibold text-slate-100 mb-4 border-b border-slate-700 pb-2">Resultados da Análise:</h2>
+            <div class="bg-slate-700 p-4 rounded-lg shadow space-y-4">
+                <div>
+                    <p class="text-sm font-medium text-slate-400">
+                        <strong>Classificação:</strong>
+                    </p>
+                    <p id="resultadoClassificacao" class="mt-1 text-xl font-semibold">-</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-slate-400">
+                        <strong>Sugestão de Resposta:</strong>
+                    </p>
+                    <div id="resultadoSugestao" class="mt-1 p-3 bg-slate-600 border border-slate-500
+                    rounded-md min-h-[60px] text-slate-200 whitespace-pre-wrap">-
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="resultadoErro" class="mt-4 p-3 text-red-400 bg-red-900/30 border border-red-700 rounded-md hidden"></div>
+    </div>
+    <footer class="text-center mt-8 text-sm text-slate-500"><p>Projeto AutoU - Desafio de Classificação</p></footer>
+
+    <script>
+        const formularioEmail = document.getElementById('formularioEmail');
+        const campoTextoEmail = document.getElementById('campoTextoEmail');
+
+        const inputArquivoEmailReal = document.getElementById('inputArquivoEmail');
+        const botaoArquivoCustomizado = document.getElementById('botaoArquivoCustomizado');
+        const nomeArquivoExibido = document.getElementById('nomeArquivoExibido');
+
+        const resultadoClassificacao = document.getElementById('resultadoClassificacao');
+        const resultadoSugestao = document.getElementById('resultadoSugestao');
+        const resultadoErro = document.getElementById('resultadoErro');
+        const secaoResultados = document.getElementById('secaoResultados');
+        const botaoAnalisarEmail = document.getElementById('botaoAnalisarEmail');
+        const spinnerCarregando = document.getElementById('spinnerCarregando');
+
+        botaoArquivoCustomizado.addEventListener('click', () => {
+            inputArquivoEmailReal.click();
+        });
+
+        inputArquivoEmailReal.addEventListener('change', () => {
+            if (inputArquivoEmailReal.files && inputArquivoEmailReal.files.length > 0) {
+                nomeArquivoExibido.textContent = inputArquivoEmailReal.files[0].name;
+            } else {
+                nomeArquivoExibido.textContent = 'Nenhum arquivo selecionado';
+            }
+        });
+
+        formularioEmail.addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            secaoResultados.classList.add('hidden');
+            resultadoClassificacao.textContent = '-';
+            resultadoClassificacao.className = 'mt-1 text-xl font-semibold text-slate-200'; // Resetar cor
+            resultadoSugestao.textContent = '-';
+            resultadoErro.classList.add('hidden');
+            resultadoErro.textContent = '';
+
+            botaoAnalisarEmail.disabled = true;
+            spinnerCarregando.classList.remove('hidden');
+
+            const formData = new FormData();
+            const conteudoTextoEmail = campoTextoEmail.value.trim();
+            const arquivoSelecionado = inputArquivoEmailReal.files.length > 0 ? inputArquivoEmailReal.files[0] : null;
+
+            let temConteudoParaEnviar = false;
+
+            if (arquivoSelecionado) {
+                const nomeArquivo = arquivoSelecionado.name.toLowerCase();
+                if (nomeArquivo.endsWith(".txt") || nomeArquivo.endsWith(".pdf")) {
+                    formData.append('arquivo_email', arquivoSelecionado);
+                    temConteudoParaEnviar = true;
+                    if (conteudoTextoEmail) {
+                        formData.append('texto_email', conteudoTextoEmail);
+                    }
+                } else {
+                    resultadoErro.textContent = 'Formato de arquivo inválido. Por favor, selecione .txt ou .pdf.';
+                    resultadoErro.classList.remove('hidden');
+                    botaoAnalisarEmail.disabled = false;
+                    spinnerCarregando.classList.add('hidden');
+                    return;
+                }
+            } else if (conteudoTextoEmail) {
+                formData.append('texto_email', conteudoTextoEmail);
+                temConteudoParaEnviar = true;
+            }
+
+            if (!temConteudoParaEnviar) {
+                resultadoErro.textContent = 'Por favor, insira o texto do email ou selecione um arquivo.';
+                resultadoErro.classList.remove('hidden');
+                botaoAnalisarEmail.disabled = false;
+                spinnerCarregando.classList.add('hidden');
+                return;
+            }
+
+            secaoResultados.classList.remove('hidden');
+            resultadoClassificacao.textContent = 'Processando...';
+            resultadoSugestao.textContent = 'Processando...';
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/processar_email', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const responseData = await response.json();
+
+                if (!response.ok) {
+                    let errorMessage = responseData.detail || `Erro do servidor: ${response.status}`;
+                    throw new Error(errorMessage);
+                }
+
+                if (responseData.classificacao.toLowerCase() === 'produtivo') {
+                    resultadoClassificacao.className = 'mt-1 text-xl font-semibold text-green-400';
+                } else if (responseData.classificacao.toLowerCase() === 'improdutivo') {
+                    resultadoClassificacao.className = 'mt-1 text-xl font-semibold text-yellow-400';
+                } else {
+                     resultadoClassificacao.className = 'mt-1 text-xl font-semibold text-slate-200';
+                }
+                resultadoClassificacao.textContent = responseData.classificacao || 'Não classificado';
+                resultadoSugestao.textContent = responseData.sugestao_resposta || 'Nenhuma sugestão fornecida.';
+
+            } catch (error) {
+                console.error('Erro ao processar email:', error);
+                resultadoClassificacao.textContent = 'Erro';
+                resultadoClassificacao.className = 'mt-1 text-xl font-semibold text-red-400';
+                resultadoSugestao.textContent = 'Erro ao processar.';
+                resultadoErro.textContent = `Ocorreu um erro: ${error.message}. Verifique o console para mais detalhes e se o servidor backend está rodando.`;
+                resultadoErro.classList.remove('hidden');
+            } finally {
+                botaoAnalisarEmail.disabled = false;
+                spinnerCarregando.classList.add('hidden');
+                inputArquivoEmailReal.value = null;
+                nomeArquivoExibido.textContent = 'Nenhum arquivo selecionado';
+            }
+        });
+    </script>
+</body>
+</html>
